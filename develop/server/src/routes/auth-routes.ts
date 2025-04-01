@@ -1,7 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { User } from '../models/User'; // Adjust the path to your User model
+import { User } from '../../db/models/User'; // Correct path to the User model
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,22 +13,22 @@ router.post('/login', async (req, res) => {
 
     try {
         // Check if the user exists
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ where: { username } });
         if (!user) {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
 
         // Validate the password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.comparePassword(password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
 
         // Generate a JWT
         const token = jwt.sign(
-            { id: user._id, username: user.username },
-            process.env.JWT_SECRET as string,
-            { expiresIn: '1h' } // Token expires in 1 hour
+            { id: user.id, username: user.username }, 
+            process.env.JWT_SECRET_KEY as string, 
+            { expiresIn: '1h' } 
         );
 
         // Send the token to the client
